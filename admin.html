@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metaluxe Admin</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',sans-serif; background:#1a1210; color:#f0d9a8; padding:16px; }
+  .login { max-width:360px; margin:60px auto; background:#2a2018; border:1px solid #d4af82; border-radius:16px; padding:32px; text-align:center; }
+  .login img { width:70px; margin-bottom:16px; }
+  .login input { width:100%; padding:12px; margin:12px 0; border:1px solid #d4af82; border-radius:8px; background:#1a1210; color:#f0d9a8; font-size:16px; }
+  .login button { width:100%; padding:14px; background:linear-gradient(135deg,#d4af82,#b8935a); border:none; border-radius:8px; font-size:16px; font-weight:bold; color:#241a10; cursor:pointer; }
+  .dash { display:none; max-width:800px; margin:0 auto; }
+  .dash.on { display:block; }
+  h1 { font-size:22px; margin:16px 0; text-align:center; }
+  .tabs { display:flex; gap:8px; margin-bottom:16px; }
+  .tab { flex:1; padding:12px; background:#2a2018; border:1px solid #d4af82; border-radius:8px; text-align:center; cursor:pointer; color:#f0d9a8; }
+  .tab.active { background:#d4af82; color:#241a10; font-weight:bold; }
+  .panel { display:none; background:#2a2018; border:1px solid #d4af82; border-radius:12px; padding:20px; }
+  .panel.active { display:block; }
+  .item { background:#1a1210; border:1px solid #5a4a35; border-radius:8px; padding:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+  .item .info { flex:1; }
+  .item .info b { color:#fff; }
+  .item .info small { color:#8a7355; display:block; }
+  .btn { padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; margin-left:6px; }
+  .btn.ok { background:#2a5a2a; color:#8f8; }
+  .btn.no { background:#5a2a2a; color:#f88; }
+  .qrbox { text-align:center; padding:20px; }
+  .qrbox img { width:220px; height:220px; background:#fff; padding:10px; border-radius:12px; }
+  .msg { padding:10px; border-radius:6px; margin:10px 0; display:none; }
+  .msg.err { background:#3a1a1a; color:#f88; display:block; }
+  .msg.okm { background:#1a3a1a; color:#8f8; display:block; }
+</style>
+</head>
+<body>
+<div class="login" id="login">
+  <img src="logo-trans.png" alt="Metaluxe">
+  <h1>Metaluxe Admin</h1>
+  <input type="password" id="pw" placeholder="Contraseña" onkeypress="if(event.key==='Enter')login()">
+  <button onclick="login()">Entrar</button>
+  <div class="msg" id="lmsg"></div>
+</div>
+<div class="dash" id="dash">
+  <h1>Panel Metaluxe</h1>
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('cola')">Cola</div>
+    <div class="tab" onclick="showTab('clientes')">Clientas</div>
+    <div class="tab" onclick="showTab('qr')">QR del día</div>
+  </div>
+  <div class="panel active" id="p-cola"><div id="cola-list"><p style="color:#8a7355">Cargando...</p></div></div>
+  <div class="panel" id="p-clientes"><div id="cli-list"><p style="color:#8a7355">Cargando...</p></div></div>
+  <div class="panel" id="p-qr"><div class="qrbox"><p style="color:#8a7355;margin-bottom:12px">QR de registro para recepción</p><img id="qr-img" src="qr-registro.png" alt="QR"><p style="margin-top:12px;font-size:13px;color:#8a7355">https://wikiman1.github.io/metaluxe-registro/</p></div></div>
+</div>
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbzIKmPOsY4PcqvjsyctbSFn4IbyQ1EZoNX6PvOs6FPRn5eieHNGc43neFWsvsp9d8fa/exec';
+let PW = '';
+function login() {
+  PW = document.getElementById('pw').value;
+  fetch(`${API}?api=admin_cola&password=${encodeURIComponent(PW)}`)
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        document.getElementById('login').style.display = 'none';
+        document.getElementById('dash').classList.add('on');
+        loadCola(); loadClientes();
+      } else {
+        const m = document.getElementById('lmsg');
+        m.className = 'msg err'; m.textContent = 'Contraseña incorrecta';
+      }
+    })
+    .catch(() => {
+      const m = document.getElementById('lmsg');
+      m.className = 'msg err'; m.textContent = 'Error de conexión';
+    });
+}
+function showTab(t) {
+  document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(e => e.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('p-'+t).classList.add('active');
+}
+function loadCola() {
+  fetch(`${API}?api=admin_cola&password=${encodeURIComponent(PW)}`)
+    .then(r => r.json()).then(d => {
+      const el = document.getElementById('cola-list');
+      if (!d.ok || !d.cola || d.cola.length === 0) { el.innerHTML = '<p style="color:#8a7355">Sin pendientes. Todo al día.</p>'; return; }
+      el.innerHTML = d.cola.map(c =>
+        `<div class="item"><div class="info"><b>${c.nombre}</b><small>${c.telefono} · ${c.tratamiento} · ${c.fecha}</small></div>
+        <button class="btn ok" onclick="aprobar('${c.folio}',1)">✓</button><button class="btn no" onclick="aprobar('${c.folio}',0)">✗</button></div>`
+      ).join('');
+    });
+}
+function aprobar(folio, ok) {
+  fetch(`${API}?api=admin_aprobar&password=${encodeURIComponent(PW)}&folio=${folio}&ok=${ok}`)
+    .then(r => r.json()).then(() => loadCola());
+}
+function loadClientes() {
+  fetch(`${API}?api=admin_clientes&password=${encodeURIComponent(PW)}`)
+    .then(r => r.json()).then(d => {
+      const el = document.getElementById('cli-list');
+      if (!d.ok || !d.clientes) { el.innerHTML = '<p>Error</p>'; return; }
+      el.innerHTML = d.clientes.map(c =>
+        `<div class="item"><div class="info"><b>${c.nombre}</b><small>${c.folio} · ${c.nivel} · ${c.sellos} sellos</small></div></div>`
+      ).join('');
+    });
+}
+</script>
+</body>
+</html>
