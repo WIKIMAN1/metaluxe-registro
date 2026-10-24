@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metaluxe Sthetic — Tarjeta de Fidelidad</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #1a0f14 0%, #2d1a24 50%, #1a0f14 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #f5e6d3;
+  }
+  .card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(212,175,130,0.3);
+    border-radius: 20px;
+    padding: 32px 28px;
+    max-width: 420px;
+    width: 100%;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .logo {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    margin: 0 auto 16px;
+    border: 2px solid #d4af82;
+  }
+  h1 {
+    text-align: center;
+    font-size: 1.4em;
+    color: #e8c98f;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 0.9em;
+    color: #c9a96a;
+    margin-bottom: 24px;
+  }
+  label {
+    display: block;
+    font-size: 0.85em;
+    color: #d4af82;
+    margin-bottom: 6px;
+    margin-top: 16px;
+  }
+  input, select {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(212,175,130,0.4);
+    background: rgba(255,255,255,0.06);
+    color: #f5e6d3;
+    font-size: 1em;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: #e8c98f;
+  }
+  select option { background: #2d1a24; color: #f5e6d3; }
+  .btn {
+    width: 100%;
+    padding: 14px;
+    margin-top: 24px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #d4af82, #b8935a);
+    color: #1a0f14;
+    font-size: 1.05em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .error {
+    background: rgba(200,50,50,0.15);
+    border: 1px solid rgba(200,50,50,0.4);
+    color: #ff9a9a;
+    padding: 12px;
+    border-radius: 10px;
+    margin-top: 16px;
+    font-size: 0.9em;
+    display: none;
+  }
+  .success {
+    text-align: center;
+    display: none;
+  }
+  .success h2 {
+    color: #e8c98f;
+    margin-bottom: 12px;
+    font-size: 1.3em;
+  }
+  .success p {
+    color: #c9a96a;
+    margin-bottom: 20px;
+    font-size: 0.95em;
+  }
+  .wallet-btn {
+    display: inline-block;
+    padding: 16px 32px;
+    background: linear-gradient(135deg, #d4af82, #b8935a);
+    color: #1a0f14;
+    text-decoration: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1.1em;
+  }
+  .folio {
+    margin-top: 16px;
+    font-size: 0.85em;
+    color: #8a7355;
+  }
+  .loading { display: none; text-align: center; margin-top: 20px; color: #c9a96a; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div id="form-view">
+    <img src="logo.jpg" alt="Metaluxe" class="logo">
+    <h1>Tarjeta de Fidelidad</h1>
+    <p class="subtitle">Regístrate y lleva tu tarjeta en Google Wallet</p>
+    <form id="reg-form">
+      <label for="nombre">Nombre completo *</label>
+      <input type="text" id="nombre" required placeholder="Tu nombre">
+      
+      <label for="telefono">Celular (WhatsApp) *</label>
+      <input type="tel" id="telefono" required placeholder="09XXXXXXXX" pattern="09[0-9]{8}" maxlength="10">
+      
+      <label for="tratamiento">Tratamiento de hoy</label>
+      <select id="tratamiento">
+        <option value="">Selecciona...</option>
+        <option>HIFU facial</option>
+        <option>HIFU corporal</option>
+        <option>Botox</option>
+        <option>Morpheus</option>
+        <option>Rinomodelación</option>
+        <option>Labios</option>
+        <option>Radiesse</option>
+        <option>Limpieza facial profunda</option>
+        <option>Dermaplaning</option>
+        <option>Skin glass</option>
+        <option>Bioinfraestimulador</option>
+        <option>Otro</option>
+      </select>
+      
+      <label for="cumple">Cumpleaños (para tu obsequio)</label>
+      <input type="date" id="cumple">
+      
+      <button type="submit" class="btn" id="submit-btn">Registrarme</button>
+    </form>
+    <div class="error" id="error-msg"></div>
+    <div class="loading" id="loading">Registrando... ⏳</div>
+  </div>
+  
+  <div id="success-view" class="success">
+    <img src="logo.jpg" alt="Metaluxe" class="logo">
+    <h2>¡Bienvenida a la familia Metaluxe! 💛</h2>
+    <p id="success-msg">Ya tienes tu sello de bienvenida.</p>
+    <a href="#" id="wallet-link" class="wallet-btn">Agregar a Google Wallet</a>
+    <p class="folio" id="folio-msg"></p>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbzIKmPOsY4PcqvjsyctbSFn4IbyQ1EZoNX6PvOs6FPRn5eieHNGc43neFWsvsp9d8fa/exec';
+
+document.getElementById('reg-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('submit-btn');
+  const errDiv = document.getElementById('error-msg');
+  const loading = document.getElementById('loading');
+  
+  errDiv.style.display = 'none';
+  btn.disabled = true;
+  loading.style.display = 'block';
+  
+  const params = new URLSearchParams({
+    api: 'registrar',
+    nombre: document.getElementById('nombre').value.trim(),
+    telefono: document.getElementById('telefono').value.trim(),
+    tratamiento: document.getElementById('tratamiento').value,
+    cumpleanos: document.getElementById('cumple').value
+  });
+  
+  try {
+    const res = await fetch(API_URL + '?' + params.toString());
+    const data = await res.json();
+    
+    if (data.ok) {
+      document.getElementById('form-view').style.display = 'none';
+      const sv = document.getElementById('success-view');
+      sv.style.display = 'block';
+      document.getElementById('wallet-link').href = data.walletLink;
+      document.getElementById('folio-msg').textContent = 'Tu folio: ' + data.folio;
+      if (!data.esNueva) {
+        document.getElementById('success-msg').textContent = '¡Qué bueno verte de nuevo! Tu tarjeta está lista.';
+      }
+    } else {
+      errDiv.textContent = data.error || 'Hubo un error. Inténtalo de nuevo.';
+      errDiv.style.display = 'block';
+      btn.disabled = false;
+    }
+  } catch (err) {
+    errDiv.textContent = 'No se pudo conectar. Verifica tu internet e inténtalo de nuevo.';
+    errDiv.style.display = 'block';
+    btn.disabled = false;
+  }
+  loading.style.display = 'none';
+});
+</script>
+</body>
+</html>
