@@ -19,18 +19,26 @@
   .tab.active { background:#d4af82; color:#241a10; font-weight:bold; }
   .panel { display:none; background:#2a2018; border:1px solid #d4af82; border-radius:12px; padding:20px; }
   .panel.active { display:block; }
-  .item { background:#1a1210; border:1px solid #5a4a35; border-radius:8px; padding:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+  .item { background:#1a1210; border:1px solid #5a4a35; border-radius:8px; padding:12px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
   .item .info { flex:1; }
   .item .info b { color:#fff; }
   .item .info small { color:#8a7355; display:block; }
   .btn { padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; margin-left:6px; }
   .btn.ok { background:#2a5a2a; color:#8f8; }
   .btn.no { background:#5a2a2a; color:#f88; }
+  .btn.back { background:#5a4a35; color:#f0d9a8; margin-bottom:12px; }
   .qrbox { text-align:center; padding:20px; }
   .qrbox img { width:220px; height:220px; background:#fff; padding:10px; border-radius:12px; }
   .msg { padding:10px; border-radius:6px; margin:10px 0; display:none; }
   .msg.err { background:#3a1a1a; color:#f88; display:block; }
-  .msg.okm { background:#1a3a1a; color:#8f8; display:block; }
+  .detail { background:#1a1210; border:1px solid #d4af82; border-radius:12px; padding:20px; }
+  .detail h2 { color:#fff; margin-bottom:12px; }
+  .detail .row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #2a2018; }
+  .detail .row span:first-child { color:#8a7355; }
+  .detail h3 { margin:16px 0 8px; color:#d4af82; }
+  .hist { background:#2a2018; border-radius:6px; padding:10px; margin-bottom:8px; font-size:14px; }
+  .hist b { color:#fff; }
+  .hist small { color:#8a7355; }
 </style>
 </head>
 <body>
@@ -44,13 +52,16 @@
 <div class="dash" id="dash">
   <h1>Panel Metaluxe</h1>
   <div class="tabs">
-    <div class="tab active" onclick="showTab('cola')">Cola</div>
-    <div class="tab" onclick="showTab('clientes')">Clientas</div>
-    <div class="tab" onclick="showTab('qr')">QR del día</div>
+    <div class="tab active" onclick="showTab('cola',event)">Cola</div>
+    <div class="tab" onclick="showTab('clientes',event)">Clientas</div>
+    <div class="tab" onclick="showTab('qr',event)">QR del día</div>
   </div>
   <div class="panel active" id="p-cola"><div id="cola-list"><p style="color:#8a7355">Cargando...</p></div></div>
-  <div class="panel" id="p-clientes"><div id="cli-list"><p style="color:#8a7355">Cargando...</p></div></div>
-  <div class="panel" id="p-qr"><div class="qrbox"><p style="color:#8a7355;margin-bottom:12px">QR de registro para recepción</p><img id="qr-img" src="qr-registro.png" alt="QR"><p style="margin-top:12px;font-size:13px;color:#8a7355">https://wikiman1.github.io/metaluxe-registro/</p></div></div>
+  <div class="panel" id="p-clientes">
+    <div id="cli-list"><p style="color:#8a7355">Cargando...</p></div>
+    <div id="cli-detail" style="display:none"></div>
+  </div>
+  <div class="panel" id="p-qr"><div class="qrbox"><p style="color:#8a7355;margin-bottom:12px">QR de registro para recepción</p><img src="qr-registro.png" alt="QR"><p style="margin-top:12px;font-size:13px;color:#8a7355">https://wikiman1.github.io/metaluxe-registro/</p></div></div>
 </div>
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbzIKmPOsY4PcqvjsyctbSFn4IbyQ1EZoNX6PvOs6FPRn5eieHNGc43neFWsvsp9d8fa/exec';
@@ -74,10 +85,10 @@ function login() {
       m.className = 'msg err'; m.textContent = 'Error de conexión';
     });
 }
-function showTab(t) {
+function showTab(t, ev) {
   document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(e => e.classList.remove('active'));
-  event.target.classList.add('active');
+  ev.target.classList.add('active');
   document.getElementById('p-'+t).classList.add('active');
 }
 function loadCola() {
@@ -87,7 +98,7 @@ function loadCola() {
       if (!d.ok || !d.cola || d.cola.length === 0) { el.innerHTML = '<p style="color:#8a7355">Sin pendientes. Todo al día.</p>'; return; }
       el.innerHTML = d.cola.map(c =>
         `<div class="item"><div class="info"><b>${c.nombre}</b><small>${c.telefono} · ${c.tratamiento} · ${c.fecha}</small></div>
-        <button class="btn ok" onclick="aprobar('${c.folio}',1)">✓</button><button class="btn no" onclick="aprobar('${c.folio}',0)">✗</button></div>`
+        <button class="btn ok" onclick="event.stopPropagation();aprobar('${c.folio}',1)">✓</button><button class="btn no" onclick="event.stopPropagation();aprobar('${c.folio}',0)">✗</button></div>`
       ).join('');
     });
 }
@@ -99,10 +110,39 @@ function loadClientes() {
   fetch(`${API}?api=admin_clientes&password=${encodeURIComponent(PW)}`)
     .then(r => r.json()).then(d => {
       const el = document.getElementById('cli-list');
+      document.getElementById('cli-detail').style.display = 'none';
+      el.style.display = 'block';
       if (!d.ok || !d.clientes) { el.innerHTML = '<p>Error</p>'; return; }
       el.innerHTML = d.clientes.map(c =>
-        `<div class="item"><div class="info"><b>${c.nombre}</b><small>${c.folio} · ${c.nivel} · ${c.sellos} sellos</small></div></div>`
+        `<div class="item" onclick="verCliente('${c.folio}')"><div class="info"><b>${c.nombre}</b><small>${c.folio} · ${c.nivel} · ${c.sellos} sellos</small></div><span style="color:#d4af82">›</span></div>`
       ).join('');
+    });
+}
+function verCliente(folio) {
+  fetch(`${API}?api=admin_historial&password=${encodeURIComponent(PW)}&folio=${folio}`)
+    .then(r => r.json()).then(d => {
+      if (!d.ok || !d.info) return;
+      const i = d.info;
+      document.getElementById('cli-list').style.display = 'none';
+      const det = document.getElementById('cli-detail');
+      det.style.display = 'block';
+      det.innerHTML = `
+        <button class="btn back" onclick="loadClientes()">← Volver</button>
+        <div class="detail">
+          <h2>${i.nombre}</h2>
+          <div class="row"><span>Folio</span><span>${i.folio}</span></div>
+          <div class="row"><span>Teléfono</span><span>${i.telefono||'-'}</span></div>
+          <div class="row"><span>Nivel</span><span>${i.nivel}</span></div>
+          <div class="row"><span>Sellos</span><span>${i.sellos}</span></div>
+          <div class="row"><span>Cumpleaños</span><span>${i.cumpleanos||'-'}</span></div>
+          <div class="row"><span>Última visita</span><span>${i.ultima||'-'}</span></div>
+          <div class="row"><span>Próxima cita</span><span>${i.proxima||'No agendada'}</span></div>
+          <div class="row"><span>Estado</span><span>${i.estado||'-'}</span></div>
+          ${i.notas ? `<div class="row"><span>Notas</span><span>${i.notas}</span></div>` : ''}
+          <h3>Historial de tratamientos</h3>
+          ${d.historial.length === 0 ? '<p style="color:#8a7355">Sin visitas registradas.</p>' :
+            d.historial.map(h => `<div class="hist"><b>${h.tratamiento}</b><br><small>${h.fecha} · ${h.via} · ${h.estado}</small></div>`).join('')}
+        </div>`;
     });
 }
 </script>
