@@ -27,6 +27,7 @@
   .btn.ok { background:#2a5a2a; color:#8f8; }
   .btn.no { background:#5a2a2a; color:#f88; }
   .btn.back { background:#5a4a35; color:#f0d9a8; margin-bottom:12px; }
+  .btn.wa { background:#25D366; color:#fff; text-decoration:none; display:inline-block; }
   .qrbox { text-align:center; padding:20px; }
   .qrbox img { width:220px; height:220px; background:#fff; padding:10px; border-radius:12px; }
   .msg { padding:10px; border-radius:6px; margin:10px 0; display:none; }
@@ -66,6 +67,21 @@
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbzIKmPOsY4PcqvjsyctbSFn4IbyQ1EZoNX6PvOs6FPRn5eieHNGc43neFWsvsp9d8fa/exec';
 let PW = '';
+function waNum(t) {
+  t = String(t || '').replace(/\D/g, '');
+  if (t.startsWith('593')) return t;
+  if (t.startsWith('0')) return '593' + t.slice(1);
+  if (t.length === 9) return '593' + t;
+  return t;
+}
+function waLink(t, nombre) {
+  const msg = 'Hola ' + (nombre || '') + ', te escribo de Metaluxe Sthetic 💛';
+  return 'https://wa.me/' + waNum(t) + '?text=' + encodeURIComponent(msg);
+}
+function waBtn(t, nombre) {
+  if (!t) return '';
+  return `<a class="btn wa" href="${waLink(t, nombre)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">WhatsApp</a>`;
+}
 function login() {
   PW = document.getElementById('pw').value;
   fetch(`${API}?api=admin_cola&password=${encodeURIComponent(PW)}`)
@@ -98,7 +114,7 @@ function loadCola() {
       if (!d.ok || !d.cola || d.cola.length === 0) { el.innerHTML = '<p style="color:#8a7355">Sin pendientes. Todo al día.</p>'; return; }
       el.innerHTML = d.cola.map(c =>
         `<div class="item"><div class="info"><b>${c.nombre}</b><small>${c.telefono} · ${c.tratamiento} · ${c.fecha}</small></div>
-        <button class="btn ok" onclick="event.stopPropagation();aprobar('${c.folio}',1)">✓</button><button class="btn no" onclick="event.stopPropagation();aprobar('${c.folio}',0)">✗</button></div>`
+        ${waBtn(c.telefono, c.nombre)}<button class="btn ok" onclick="event.stopPropagation();aprobar('${c.folio}',1)">✓</button><button class="btn no" onclick="event.stopPropagation();aprobar('${c.folio}',0)">✗</button></div>`
       ).join('');
     });
 }
@@ -114,7 +130,7 @@ function loadClientes() {
       el.style.display = 'block';
       if (!d.ok || !d.clientes) { el.innerHTML = '<p>Error</p>'; return; }
       el.innerHTML = d.clientes.map(c =>
-        `<div class="item" onclick="verCliente('${c.folio}')"><div class="info"><b>${c.nombre}</b><small>${c.folio} · ${c.nivel} · ${c.sellos} sellos</small></div><span style="color:#d4af82">›</span></div>`
+        `<div class="item" onclick="verCliente('${c.folio}')"><div class="info"><b>${c.nombre}</b><small>${c.folio} · ${c.nivel} · ${c.sellos} sellos</small></div>${waBtn(c.telefono, c.nombre)}<span style="color:#d4af82">›</span></div>`
       ).join('');
     });
 }
@@ -132,6 +148,7 @@ function verCliente(folio) {
           <h2>${i.nombre}</h2>
           <div class="row"><span>Folio</span><span>${i.folio}</span></div>
           <div class="row"><span>Teléfono</span><span>${i.telefono||'-'}</span></div>
+          ${i.telefono ? `<div class="row"><span>WhatsApp</span><span><a class="btn wa" href="${waLink(i.telefono, i.nombre)}" target="_blank" rel="noopener">Escribir por WhatsApp</a></span></div>` : ''}
           <div class="row"><span>Nivel</span><span>${i.nivel}</span></div>
           <div class="row"><span>Sellos</span><span>${i.sellos}</span></div>
           <div class="row"><span>Cumpleaños</span><span>${i.cumpleanos||'-'}</span></div>
