@@ -196,9 +196,51 @@ function verCliente(folio) {
             d.historial.map(h => `<div class="hist"><b>${h.tratamiento}</b><br><small>${h.fecha} · ${h.via} · ${h.estado}</small></div>`).join('')}
           <h3>Fotos antes / después</h3>
           <div id="fotos-box"><p style="color:#8a7355">Cargando fotos…</p></div>
+          <h3>Subir foto</h3>
+          <div id="subir-box">
+            <div style="display:grid;gap:8px">
+              <input type="file" id="foto-file" accept="image/*" style="color:#f0d9a8">
+              <input type="text" id="foto-trat" placeholder="Tratamiento (ej. Botox)" style="padding:10px;border:1px solid #d4af82;border-radius:8px;background:#1a1210;color:#f0d9a8">
+              <select id="foto-tipo" style="padding:10px;border:1px solid #d4af82;border-radius:8px;background:#1a1210;color:#f0d9a8"><option value="Antes">Antes</option><option value="Después">Después</option></select>
+              <button class="btn ok" style="margin-left:0;padding:12px" onclick="subirFoto('${i.folio}','${i.nombre.replace(/'/g, "\\'")}')">Subir foto</button>
+              <p id="foto-msg" style="color:#8a7355"></p>
+            </div>
+          </div>
         </div>`;
       loadFotos(i.folio);
     });
+}
+function subirFoto(folio, nombre) {
+  const file = document.getElementById('foto-file').files[0];
+  const trat = document.getElementById('foto-trat').value.trim();
+  const tipo = document.getElementById('foto-tipo').value;
+  const msg = document.getElementById('foto-msg');
+  if (!file) { msg.textContent = 'Elige una foto primero.'; return; }
+  if (!trat) { msg.textContent = 'Escribe el tratamiento.'; return; }
+  msg.textContent = 'Subiendo…';
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height, s = 1;
+      if (Math.max(w, h) > 1600) s = 1600 / Math.max(w, h);
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(w * s); cv.height = Math.round(h * s);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      enviarFoto(cv.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => enviarFoto(reader.result);
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+  function enviarFoto(dataUrl) {
+    const b64 = dataUrl.split(',')[1];
+    fetch(API, {method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify({api:'subir_foto', password:PW, folio:folio, nombre:nombre, tratamiento:trat, tipo:tipo, imagen:b64, nombreArchivo: folio + '-' + tipo + '-' + Date.now() + '.jpg'})})
+      .then(r => r.json()).then(d => {
+        if (d.ok) { msg.textContent = 'Foto guardada.'; document.getElementById('foto-file').value = ''; document.getElementById('foto-trat').value = ''; loadFotos(folio); }
+        else msg.textContent = 'No se pudo subir la foto. Intenta de nuevo.';
+      }).catch(() => { msg.textContent = 'Foto enviada, recargando fotos…'; loadFotos(folio); });
+  }
 }
 function fotoImg(enlace) {
   const m = String(enlace || '').match(/\/d\/([^\/]+)/);
