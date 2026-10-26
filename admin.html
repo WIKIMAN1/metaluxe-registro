@@ -28,6 +28,10 @@
   .btn.no { background:#5a2a2a; color:#f88; }
   .btn.back { background:#5a4a35; color:#f0d9a8; margin-bottom:12px; }
   .btn.wa { background:#25D366; color:#fff; text-decoration:none; display:inline-block; }
+  .fotos-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:8px 0 14px; }
+  .foto { text-align:center; }
+  .foto img { width:100%; border-radius:8px; border:1px solid #3a2c1e; }
+  .foto small { color:#d4af82; }
   .qrbox { text-align:center; padding:20px; }
   .qrbox img { width:220px; height:220px; background:#fff; padding:10px; border-radius:12px; }
   .msg { padding:10px; border-radius:6px; margin:10px 0; display:none; }
@@ -159,8 +163,33 @@ function verCliente(folio) {
           <h3>Historial de tratamientos</h3>
           ${d.historial.length === 0 ? '<p style="color:#8a7355">Sin visitas registradas.</p>' :
             d.historial.map(h => `<div class="hist"><b>${h.tratamiento}</b><br><small>${h.fecha} · ${h.via} · ${h.estado}</small></div>`).join('')}
+          <h3>Fotos antes / después</h3>
+          <div id="fotos-box"><p style="color:#8a7355">Cargando fotos…</p></div>
         </div>`;
+      loadFotos(i.folio);
     });
+}
+function fotoImg(enlace) {
+  const m = String(enlace || '').match(/\/d\/([^\/]+)/);
+  return m ? 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w800' : enlace;
+}
+function loadFotos(folio) {
+  fetch(`${API}?api=admin_fotos&password=${encodeURIComponent(PW)}&folio=${folio}`)
+    .then(r => r.json()).then(d => {
+      const box = document.getElementById('fotos-box');
+      if (!box) return;
+      if (!d.ok || !d.fotos || d.fotos.length === 0) { box.innerHTML = '<p style="color:#8a7355">Sin fotos registradas todavía.</p>'; return; }
+      const grupos = {};
+      d.fotos.forEach(f => { const k = f.tratamiento + '|' + f.fecha; (grupos[k] = grupos[k] || []).push(f); });
+      box.innerHTML = Object.entries(grupos).map(([k, fs]) => {
+        const [trat, fecha] = k.split('|');
+        const antes = fs.find(f => /antes/i.test(f.tipo || ''));
+        const desp = fs.find(f => /desp/i.test(f.tipo || ''));
+        const resto = fs.filter(f => f !== antes && f !== desp);
+        const par = (f, etiq) => f ? `<div class="foto"><a href="${f.enlace}" target="_blank" rel="noopener"><img src="${fotoImg(f.enlace)}" alt="${etiq}"></a><br><small>${etiq}${f.notas ? ' · ' + f.notas : ''}</small></div>` : '';
+        return `<h4 style="color:#d4af82;margin:10px 0 4px">${trat} · ${fecha}</h4><div class="fotos-grid">${par(antes, 'Antes')}${par(desp, 'Después')}${resto.map(f => par(f, f.tipo || '')).join('')}</div>`;
+      }).join('');
+    }).catch(() => { const box = document.getElementById('fotos-box'); if (box) box.innerHTML = '<p style="color:#8a7355">No se pudieron cargar las fotos.</p>'; });
 }
 </script>
 </body>
